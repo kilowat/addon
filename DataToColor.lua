@@ -56,7 +56,7 @@ local FRAME_ROWS = 1
 -- Size of data squares in px. Varies based on rounding errors as well as dimension size. Use as a guideline, but not 100% accurate.
 local CELL_SIZE = 10
 -- Spacing in px between data squares.
-local CELL_SPACING = 0
+local CELL_SPACING = 1
 -- Item slot trackers initialization
 local itemNum = 0
 local slotNum = 0
@@ -90,11 +90,10 @@ local HearthZoneList = {"CENARION HOLD", "VALLEY OF TRIALS", "THE CROSSROADS", "
 local EnchantmentStrings = {}
 --  translit--
 local translit = {
-  ['а'] ="a", ['б'] ="b", ['в'] ="v", ['г'] ="g", ['д'] ="d", ['е'] ="e", ['ж'] ="j", ['ё']="e",
-  ['з']="z", ['и']="i", ['й'] ="i", ['к'] ="k", ['л'] ="l", ['м']="m", ['н'] ="n", ['о'] ="o",
-  ['п'] ="p", ['р'] ="r", ['с'] ="s", ['т'] ="t", ['у'] ="y", ['ф'] ="f", ['х'] ="h", ['ц'] ="c",
-  ['ч'] ="h", ['ш'] ="s", ['щ'] ="h", ['ъ'] ="1", ['ы']="i", ['ь']="2", ['э']="e",['ю']="u",
-  ['я'] ="y"}
+  ['А'] ="192", ['Б'] ="193", ['В'] ="194", ['Г'] = "195", ['Д'] ="196", ['Е'] ="197", ['Ж'] ="198", ['З']="199",
+  ['И']="200", ['Й']="201", ['К'] ="202", ['Л'] ="203", ['М'] ="204", ['Н']="205", ['О'] ="206", ['П'] ="207",
+  ['Р'] ="208", ['С'] ="209", ['Т'] ="210", ['У'] ="211", ['Ф'] ="212", ['Х'] ="213", ['Ц'] ="214", ['Ч'] ="215",
+  ['Ш'] ="216", ['Щ'] ="217", ['Ъ'] ="218", ['Ы'] ="219", ['Ь']="220", ['Э']="221", ['Ю']="222",['Я']="223", [' '] = "160"}
 
 function DataToColor:RusUpper(Ch)
   if string.byte(Ch) < 224 then return string.upper(Ch) end
@@ -111,7 +110,7 @@ function DataToColor:TranslitIT(s)
 
   while (pos <= string.len(s)) do
     for i = 3, 1, -1 do
-      toFind = string.lower(string.sub(s, pos, pos + i - 1))
+      toFind = string.upper(string.sub(s, pos, pos + i - 1))
       res = translit[toFind]
       if res ~= nil then
         outstr = outstr..res
@@ -124,6 +123,7 @@ function DataToColor:TranslitIT(s)
       pos = pos + 1
     end
   end
+ 
   return outstr
 end
 
@@ -230,7 +230,6 @@ end
 
 -- Pass in a string to get the upper case ASCII values. Converts any special character with ASCII values below 100
 function DataToColor:StringToASCIIHex(str)
-	str = self:TranslitIT(str)
     -- Converts string to upper case so only 2 digit ASCII values
     str = string.sub(string.upper(str), 0, 6)
     -- Sets string to an empty string
@@ -274,32 +273,37 @@ function DataToColor:CreateFrames(n)
             MakePixelSquareArr({63 / 255, 0, 63 / 255}, i)
         end
         if not SETUP_SEQUENCE then
-            MakePixelSquareArr(integerToColor(0), 0)
+            --MakePixelSquareArr(integerToColor(0), 0)
             -- The final data square, reserved for additional metadata.
-            MakePixelSquareArr(integerToColor(2000001), NUMBER_OF_FRAMES - 1)
+            --MakePixelSquareArr(integerToColor(2000001), NUMBER_OF_FRAMES - 1)
             -- Position related variables --
-            MakePixelSquareArr(fixedDecimalToColor(xCoordi), 1) --1 The x-coordinate
-            MakePixelSquareArr(fixedDecimalToColor(yCoordi), 2) --2 The y-coordinate
-            MakePixelSquareArr(fixedDecimalToColor(DataToColor:GetPlayerFacing()), 3) --3 The direction the player is facing in radians
-            --MakePixelSquareArr(integerToColor(self:StringToASCIIHex("Zon")), 4) 
-		
-			MakePixelSquareArr(integerToColor(self:GetZoneName(0)), 4) -- Get name of first 3 characters of zone
-            MakePixelSquareArr(integerToColor(self:GetZoneName(3)), 5) -- Get name of last 3 characters of zone
-            MakePixelSquareArr(fixedDecimalToColor(self:CorpsePosition("x") * 10), 6) -- Returns the x coordinates of corpse
-            MakePixelSquareArr(fixedDecimalToColor(self:CorpsePosition("y") * 10), 7) -- Return y coordinates of corpse
+            MakePixelSquareArr(fixedDecimalToColor(xCoordi), 0) --1 The x-coordinate
+            MakePixelSquareArr(fixedDecimalToColor(yCoordi), 1) --2 The y-coordinate
+            MakePixelSquareArr(fixedDecimalToColor(DataToColor:GetPlayerFacing()), 2) --3 The direction the player is facing in radians		
+			--Zone name
+			MakePixelSquareArr(self:ThreeCharsToColor(0, GetZoneText()), 3)
+			MakePixelSquareArr(self:ThreeCharsToColor(1, GetZoneText()), 4)
+			MakePixelSquareArr(self:ThreeCharsToColor(2, GetZoneText()), 5)
+			MakePixelSquareArr(self:ThreeCharsToColor(3, GetZoneText()), 6)
+			MakePixelSquareArr(self:ThreeCharsToColor(4, GetZoneText()), 7)
+			MakePixelSquareArr(self:ThreeCharsToColor(5, GetZoneText()), 8)
+			MakePixelSquareArr(self:ThreeCharsToColor(6, GetZoneText()), 9)
+           
+		   MakePixelSquareArr(fixedDecimalToColor(self:CorpsePosition("x") * 10), 10) -- Returns the x coordinates of corpse
+           MakePixelSquareArr(fixedDecimalToColor(self:CorpsePosition("y") * 10), 11) -- Return y coordinates of corpse
             -- Boolean variables --
-            MakePixelSquareArr(integerToColor(self:Base2Converter()), 8)
+           MakePixelSquareArr(integerToColor(self:Base2Converter()), 12)
             -- Start combat/NPC related variables --
-            MakePixelSquareArr(integerToColor(self:getHealthMax("player")), 10) --8 Represents maximum amount of health
-            MakePixelSquareArr(integerToColor(self:getHealthCurrent("player")), 11) --9 Represents current amount of health
-            MakePixelSquareArr(integerToColor(self:getManaMax("player")), 12) --10 Represents maximum amount of mana
-            MakePixelSquareArr(integerToColor(self:getManaCurrent("player")), 13) --11 Represents current amount of mana
-            MakePixelSquareArr(integerToColor(self:getPlayerLevel()), 14) --12 Represents character level
-            MakePixelSquareArr(integerToColor(self:isInRange()), 15) -- 15 Represents if target is within 20, 30, 35, or greater than 35 yards
-            MakePixelSquareArr(integerToColor(self:GetTargetName(0)), 16) -- Characters 1-3 of target's name
-            MakePixelSquareArr(integerToColor(self:GetTargetName(3)), 17) -- Characters 4-6 of target's name
-            MakePixelSquareArr(integerToColor(self:getHealthMax("target")), 18) -- Return the maximum amount of health a target can have
-            MakePixelSquareArr(integerToColor(self:getHealthCurrent("target")), 19) -- Returns the current amount of health the target currently has
+            --MakePixelSquareArr(integerToColor(self:getHealthMax("player")), 10) --8 Represents maximum amount of health
+            --MakePixelSquareArr(integerToColor(self:getHealthCurrent("player")), 11) --9 Represents current amount of health
+            --MakePixelSquareArr(integerToColor(self:getManaMax("player")), 12) --10 Represents maximum amount of mana
+            --MakePixelSquareArr(integerToColor(self:getManaCurrent("player")), 13) --11 Represents current amount of mana
+            --MakePixelSquareArr(integerToColor(self:getPlayerLevel()), 14) --12 Represents character level
+            --MakePixelSquareArr(integerToColor(self:isInRange()), 15) -- 15 Represents if target is within 20, 30, 35, or greater than 35 yards
+            --MakePixelSquareArr(integerToColor(self:GetTargetName(0)), 16) -- Characters 1-3 of target's name
+            --MakePixelSquareArr(integerToColor(self:GetTargetName(3)), 17) -- Characters 4-6 of target's name
+            --MakePixelSquareArr(integerToColor(self:getHealthMax("target")), 18) -- Return the maximum amount of health a target can have
+            --MakePixelSquareArr(integerToColor(self:getHealthCurrent("target")), 19) -- Returns the current amount of health the target currently has
             -- Begin Items section --
             -- there are 5 item slots: main backpack and 4 pouches
             -- Indexes one slot from each bag each frame. SlotN (1-16) and bag (0-4) calculated here:
@@ -326,9 +330,9 @@ function DataToColor:CreateFrames(n)
             -- Uses data pixel positions 20-29
             for i = 0, 4 do
                 -- Returns item ID and quantity
-                MakePixelSquareArr(integerToColor(self:itemName(i, itemNum)), 20 + i * 2)
+                --MakePixelSquareArr(integerToColor(self:itemName(i, itemNum)), 20 + i * 2)
                 -- Return item slot number
-                MakePixelSquareArr(integerToColor(i * 16 + itemNum), 21 + i * 2)
+                --MakePixelSquareArr(integerToColor(i * 16 + itemNum), 21 + i * 2)
             end
             -- Worn inventory start.
             -- Starts at beginning once we have looked at all desired slots.
@@ -337,31 +341,31 @@ function DataToColor:CreateFrames(n)
             end
             local equipName = self:equipName(equipNum)
             -- Equipment ID
-            MakePixelSquareArr(integerToColor(equipName), 30)
+            --MakePixelSquareArr(integerToColor(equipName), 30)
             -- Equipment slot
-            MakePixelSquareArr(integerToColor(equipNum), 31)
+            --MakePixelSquareArr(integerToColor(equipNum), 31)
             -- Amount of money in coppers
-            MakePixelSquareArr(integerToColor(Modulo(self:getMoneyTotal(), 1000000)), 32) -- 13 Represents amount of money held (in copper)
-            MakePixelSquareArr(integerToColor(floor(self:getMoneyTotal() / 1000000)), 33) -- 14 Represents amount of money held (in gold)
+            --MakePixelSquareArr(integerToColor(Modulo(self:getMoneyTotal(), 1000000)), 32) -- 13 Represents amount of money held (in copper)
+            --MakePixelSquareArr(integerToColor(floor(self:getMoneyTotal() / 1000000)), 33) -- 14 Represents amount of money held (in gold)
             -- Start main action page (page 1)
-            MakePixelSquareArr(integerToColor(self:spellStatus()), 34) -- Has global cooldown active
-            MakePixelSquareArr(integerToColor(self:spellAvailable()), 35) -- Is the spell available to be cast?
-            MakePixelSquareArr(integerToColor(self:notEnoughMana()), 36) -- Do we have enough mana to cast that spell
+            --MakePixelSquareArr(integerToColor(self:spellStatus()), 34) -- Has global cooldown active
+            --MakePixelSquareArr(integerToColor(self:spellAvailable()), 35) -- Is the spell available to be cast?
+            --MakePixelSquareArr(integerToColor(self:notEnoughMana()), 36) -- Do we have enough mana to cast that spell
             -- Number of slots each bag contains, not including our default backpack
-            MakePixelSquareArr(integerToColor(self:bagSlots(1)), 37) -- Bag slot 1
-            MakePixelSquareArr(integerToColor(self:bagSlots(2)), 38) -- Bag slot 2
-            MakePixelSquareArr(integerToColor(self:bagSlots(3)), 39) -- Bag slot 3
-            MakePixelSquareArr(integerToColor(self:bagSlots(4)), 40) -- Bag slot 4
+            --MakePixelSquareArr(integerToColor(self:bagSlots(1)), 37) -- Bag slot 1
+            --MakePixelSquareArr(integerToColor(self:bagSlots(2)), 38) -- Bag slot 2
+            --MakePixelSquareArr(integerToColor(self:bagSlots(3)), 39) -- Bag slot 3
+            --MakePixelSquareArr(integerToColor(self:bagSlots(4)), 40) -- Bag slot 4
             -- Profession levels:
             -- tracks our skinning level
-            MakePixelSquareArr(integerToColor(self:GetProfessionLevel("Skinning")), 41) -- Skinning profession level
+            --MakePixelSquareArr(integerToColor(self:GetProfessionLevel("Skinning")), 41) -- Skinning profession level
             -- tracks our fishing level
-            MakePixelSquareArr(integerToColor(self:GetProfessionLevel("Fishing")), 42) -- Fishing profession level
-            MakePixelSquareArr(integerToColor(self:GetDebuffs("FrostNova")), 43) -- Checks if target is frozen by frost nova debuff
-            MakePixelSquareArr(integerToColor(self:GameTime()), 44) -- Returns time in the game
-            MakePixelSquareArr(integerToColor(self:GetGossipIcons()), 45) -- Returns which gossip icons are on display in dialogue box
-            MakePixelSquareArr(integerToColor(self:PlayerClass()), 46) -- Returns player class as an integer
-            MakePixelSquareArr(integerToColor(self:isUnskinnable()), 47) -- Returns 1 if creature is unskinnable
+            --MakePixelSquareArr(integerToColor(self:GetProfessionLevel("Fishing")), 42) -- Fishing profession level
+            --MakePixelSquareArr(integerToColor(self:GetDebuffs("FrostNova")), 43) -- Checks if target is frozen by frost nova debuff
+            --MakePixelSquareArr(integerToColor(self:GameTime()), 44) -- Returns time in the game
+            --MakePixelSquareArr(integerToColor(self:GetGossipIcons()), 45) -- Returns which gossip icons are on display in dialogue box
+            --MakePixelSquareArr(integerToColor(self:PlayerClass()), 46) -- Returns player class as an integer
+            --MakePixelSquareArr(integerToColor(self:isUnskinnable()), 47) -- Returns 1 if creature is unskinnable
             --MakePixelSquareArr(integerToColor(self:hearthZoneID()), 48) -- Returns subzone of that is currently bound to hearhtstone
             self:HandleEvents()
         end
@@ -375,9 +379,9 @@ function DataToColor:CreateFrames(n)
         end
         -- Note: Use this area to set color for individual pixel frames
         -- Cont: For example self.frames[0] = playerXCoordinate while self.frames[1] refers to playerXCoordinate
-    end
+	end
     -- Function used to generate a single frame
-    local function setFramePixelBackdrop(f)
+    function setFramePixelBackdrop(f)
         f:SetBackdrop({
             bgFile = "Interface\\AddOns\\DataToColor\\white.tga",
             insets = {top = 0, left = 0, bottom = 0, right = 0},
@@ -405,27 +409,27 @@ function DataToColor:CreateFrames(n)
     backgroundframe:SetWidth(floor(n / FRAME_ROWS) * (CELL_SIZE + CELL_SPACING))
     backgroundframe:SetFrameStrata("HIGH")
     
-    local windowCheckFrame = CreateFrame("Frame", "frame_windowcheck", UIParent)
-    windowCheckFrame:SetPoint("TOPLEFT", 120, -200)
-    windowCheckFrame:SetHeight(5)
-    windowCheckFrame:SetWidth(5)
-    windowCheckFrame:SetFrameStrata("LOW")
-    setFramePixelBackdrop(windowCheckFrame)
-    windowCheckFrame:SetBackdropColor(0.5, 0.1, 0.8, 1)
+    --local windowCheckFrame = CreateFrame("Frame", "frame_windowcheck", UIParent)
+    --windowCheckFrame:SetPoint("TOPLEFT", 120, -200)
+    --windowCheckFrame:SetHeight(5)
+    --windowCheckFrame:SetWidth(5)
+    --windowCheckFrame:SetFrameStrata("LOW")
+    --setFramePixelBackdrop(windowCheckFrame)
+    --windowCheckFrame:SetBackdropColor(0.5, 0.1, 0.8, 1)
     
     -- creating a new frame to check for open BOE and BOP windows
-    local bindingCheckFrame = CreateFrame("Frame", "frame_bindingcheck", UIParent)
+    -- local bindingCheckFrame = CreateFrame("Frame", "frame_bindingcheck", UIParent)
     -- 90 and 200 are the x and y offsets from the default "CENTER" position
-    bindingCheckFrame:SetPoint("CENTER", 90, 200)
+    -- bindingCheckFrame:SetPoint("CENTER", 90, 200)
     -- Frame height as 5px
-    bindingCheckFrame:SetHeight(5)
+    -- bindingCheckFrame:SetHeight(5)
     -- Frame width as 5px
-    bindingCheckFrame:SetWidth(5)
+    -- bindingCheckFrame:SetWidth(5)
     -- sets the priority of the Frame
-    bindingCheckFrame:SetFrameStrata("LOW")
-    setFramePixelBackdrop(bindingCheckFrame)
+    -- bindingCheckFrame:SetFrameStrata("LOW")
+    -- setFramePixelBackdrop(bindingCheckFrame)
     -- sets the rgba color format
-    bindingCheckFrame:SetBackdropColor(0.5, 0.1, 0.8, 1)
+    -- bindingCheckFrame:SetBackdropColor(0.5, 0.1, 0.8, 1)
     
     -- Note: Use for loop based on input to generate "n" number of frames
     for frame = 0, n - 1 do
@@ -452,12 +456,19 @@ end
 -- Base 2 converter for up to 24 boolean values to a single pixel square.
 function DataToColor:Base2Converter()
     -- 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384
-    return self:MakeIndexBase2(self:targetCombatStatus(), 0) + self:MakeIndexBase2(self:GetEnemyStatus(), 1) + self:MakeIndexBase2(self:deadOrAlive(), 2) +
-    self:MakeIndexBase2(self:checkTalentPoints(), 3) + self:MakeIndexBase2(self:needWater(), 4) + self:MakeIndexBase2(self:GetBuffs("Food"), 5) +
-    self:MakeIndexBase2(self:GetBuffs("Frost Armor"), 6) + self:MakeIndexBase2(self:GetBuffs("Arcane Intellect"), 7) + self:MakeIndexBase2(self:GetBuffs("Ice Barrier"), 8) +
-    self:MakeIndexBase2(self:GetInventoryBroken(), 9) + self:MakeIndexBase2(self:IsPlayerFlying(), 10) + self:MakeIndexBase2(self:needFood(), 11) +
-    self:MakeIndexBase2(self:GetBuffs("Evocation"), 12) + self:MakeIndexBase2(self:GetBuffs("Drink"), 13) + self:MakeIndexBase2(self:playerCombatStatus(), 14) +
-    self:MakeIndexBase2(self:IsTargetOfTargetPlayer(), 15) + self:MakeIndexBase2(self:needManaGem(), 16) + self:MakeIndexBase2(self:ProcessExitStatus(), 17)
+    return self:MakeIndexBase2(
+	self:targetCombatStatus(), 0) + 
+	self:MakeIndexBase2(self:GetEnemyStatus(), 1) + 
+	self:MakeIndexBase2(self:deadOrAlive(), 2) +
+    self:MakeIndexBase2(self:checkTalentPoints(), 3) + 
+	self:MakeIndexBase2(self:needWater(), 4) + 
+    self:MakeIndexBase2(self:GetInventoryBroken(), 5) + 
+	self:MakeIndexBase2(self:IsPlayerFlying(), 6) + 
+	self:MakeIndexBase2(self:needFood(), 7) +
+	self:MakeIndexBase2(self:playerCombatStatus(), 8) +
+    self:MakeIndexBase2(self:IsTargetOfTargetPlayer(), 9) + 
+	self:MakeIndexBase2(self:needManaGem(), 10) + 
+	self:MakeIndexBase2(self:ProcessExitStatus(), 11)
 end
 
 -- Returns bitmask values.
@@ -664,7 +675,38 @@ function DataToColor:GetDebuffs(debuff)
 end
 
 -- Returns zone name
-function DataToColor:GetZoneName(partition)
+
+function DataToColor:ThreeCharsToColor(index, str)
+	str = self:TranslitIT(str)
+	local r = 0
+	local g = 0
+	local b = 0
+	local tmpIndex = (index * 6)
+	
+	if index > 0 then 
+		tmpIndex = tmpIndex + 4
+	end
+	
+	local from = tmpIndex
+	local to = (tmpIndex + 9)
+	local iterStr = string.sub(str, from, to)
+	
+	local rStr = string.sub(iterStr, 0, 3)
+	local gStr = string.sub(iterStr, 4, 6)
+	local bStr = string.sub(iterStr, 7, 9)
+	
+	r = tonumber(rStr)
+	g = tonumber(gStr)
+	b = tonumber(bStr)
+	
+	if r == nil or r ~= math.floor(r) then r = 0 end
+	if g == nil or g ~= math.floor(g) then g = 0 end
+	if b == nil or b ~= math.floor(b) then b = 0 end
+	
+	return { r / 255, g / 255, b / 255}
+end
+
+function DataToColor:GetZoneName2(partition)
     local zone = DataToColor:StringToASCIIHex(GetZoneText())
 	
     if zone and tonumber(string.sub(zone, 7, 12)) ~= nil then
@@ -1110,4 +1152,3 @@ function DataToColor:ResurrectPlayer()
         end
     end
 end
-
