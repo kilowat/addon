@@ -56,7 +56,7 @@ local FRAME_ROWS = 1
 -- Size of data squares in px. Varies based on rounding errors as well as dimension size. Use as a guideline, but not 100% accurate.
 local CELL_SIZE = 10
 -- Spacing in px between data squares.
-local CELL_SPACING = 1
+local CELL_SPACING = 2
 -- Item slot trackers initialization
 local itemNum = 0
 local slotNum = 0
@@ -77,6 +77,11 @@ local BOTTOM_LEFT_MAX = 72
 
 DataToColor.frames = nil
 DataToColor.r = 0
+
+local RANGE_FAR_DISTANCE_SLOT_ID = 25
+local RANGE_CLOSE_DISTANCE_SLOT_ID = 26
+local RANGE_MELEE_DISTANCE_SLOT_ID = 27
+
 
 -- Note: Coordinates where player is standing (max: 10, min: -10)
 -- Note: Player direction is in radians (360 degrees = 2π radians)
@@ -228,6 +233,10 @@ function fixedDecimalToColor(f)
     return integerToColor(i)
 end
 
+function DataToColor:isCanMeleeAttack()
+	return 0
+end
+
 -- Pass in a string to get the upper case ASCII values. Converts any special character with ASCII values below 100
 function DataToColor:StringToASCIIHex(str)
     -- Converts string to upper case so only 2 digit ASCII values
@@ -243,7 +252,20 @@ function DataToColor:StringToASCIIHex(str)
     end
     return tonumber(ASCII)
 end
-
+function DataToColor:reportActionButtons()
+	local lActionSlot = 0;
+	for lActionSlot = 1, 120 do
+		local lActionText = GetActionText(lActionSlot);
+		local lActionTexture = GetActionTexture(lActionSlot);
+		if lActionTexture then
+			local lMessage = "Slot " .. lActionSlot .. ": [" .. lActionTexture .. "]";
+			if lActionText then
+				lMessage = lMessage .. " \"" .. lActionText .. "\"";
+			end
+			DEFAULT_CHAT_FRAME:AddMessage(lMessage);
+		end
+	end
+end
 -- Function to mass generate all of the initial frames for the pixel reader
 function DataToColor:CreateFrames(n)
     -- Note: Use single frame and update color on game update call
@@ -273,34 +295,36 @@ function DataToColor:CreateFrames(n)
             MakePixelSquareArr({63 / 255, 0, 63 / 255}, i)
         end
         if not SETUP_SEQUENCE then
-            --MakePixelSquareArr(integerToColor(0), 0)
+            MakePixelSquareArr(integerToColor(0), 0)
             -- The final data square, reserved for additional metadata.
-            --MakePixelSquareArr(integerToColor(2000001), NUMBER_OF_FRAMES - 1)
+            MakePixelSquareArr(integerToColor(2000001), NUMBER_OF_FRAMES - 1)
             -- Position related variables --
-            MakePixelSquareArr(fixedDecimalToColor(xCoordi), 0) --1 The x-coordinate
-            MakePixelSquareArr(fixedDecimalToColor(yCoordi), 1) --2 The y-coordinate
-            MakePixelSquareArr(fixedDecimalToColor(DataToColor:GetPlayerFacing()), 2) --3 The direction the player is facing in radians		
+            MakePixelSquareArr(fixedDecimalToColor(xCoordi), 1) --1 The x-coordinate
+            MakePixelSquareArr(fixedDecimalToColor(yCoordi), 2) --2 The y-coordinate
+            MakePixelSquareArr(fixedDecimalToColor(DataToColor:GetPlayerFacing()), 3) --3 The direction the player is facing in radians		
 			--Zone name
-			MakePixelSquareArr(self:ThreeCharsToColor(0, GetZoneText()), 3)
-			MakePixelSquareArr(self:ThreeCharsToColor(1, GetZoneText()), 4)
-			MakePixelSquareArr(self:ThreeCharsToColor(2, GetZoneText()), 5)
-			MakePixelSquareArr(self:ThreeCharsToColor(3, GetZoneText()), 6)
-			MakePixelSquareArr(self:ThreeCharsToColor(4, GetZoneText()), 7)
-			MakePixelSquareArr(self:ThreeCharsToColor(5, GetZoneText()), 8)
-			MakePixelSquareArr(self:ThreeCharsToColor(6, GetZoneText()), 9)
-           
-		   MakePixelSquareArr(fixedDecimalToColor(self:CorpsePosition("x") * 10), 10) -- Returns the x coordinates of corpse
-           MakePixelSquareArr(fixedDecimalToColor(self:CorpsePosition("y") * 10), 11) -- Return y coordinates of corpse
+			MakePixelSquareArr(self:ThreeCharsToColor(0, GetZoneText()), 4)
+			MakePixelSquareArr(self:ThreeCharsToColor(1, GetZoneText()), 5)
+			MakePixelSquareArr(self:ThreeCharsToColor(2, GetZoneText()), 6)
+			MakePixelSquareArr(self:ThreeCharsToColor(3, GetZoneText()), 7)
+			MakePixelSquareArr(self:ThreeCharsToColor(4, GetZoneText()), 8)
+			MakePixelSquareArr(self:ThreeCharsToColor(5, GetZoneText()), 9)
+			MakePixelSquareArr(self:ThreeCharsToColor(6, GetZoneText()), 10)
+
+			MakePixelSquareArr(fixedDecimalToColor(self:CorpsePosition("x") * 10), 11) -- Returns the x coordinates of corpse
+			MakePixelSquareArr(fixedDecimalToColor(self:CorpsePosition("y") * 10), 12) -- Return y coordinates of corpse
             -- Boolean variables --
-           MakePixelSquareArr(integerToColor(self:Base2Converter()), 12)
+			MakePixelSquareArr(integerToColor(self:Base2Converter()), 13)
             -- Start combat/NPC related variables --
-            --MakePixelSquareArr(integerToColor(self:getHealthMax("player")), 10) --8 Represents maximum amount of health
-            --MakePixelSquareArr(integerToColor(self:getHealthCurrent("player")), 11) --9 Represents current amount of health
-            --MakePixelSquareArr(integerToColor(self:getManaMax("player")), 12) --10 Represents maximum amount of mana
-            --MakePixelSquareArr(integerToColor(self:getManaCurrent("player")), 13) --11 Represents current amount of mana
-            --MakePixelSquareArr(integerToColor(self:getPlayerLevel()), 14) --12 Represents character level
-            --MakePixelSquareArr(integerToColor(self:isInRange()), 15) -- 15 Represents if target is within 20, 30, 35, or greater than 35 yards
-            --MakePixelSquareArr(integerToColor(self:GetTargetName(0)), 16) -- Characters 1-3 of target's name
+			MakePixelSquareArr(integerToColor(self:getHealthMax("player")), 14) --14 Represents maximum amount of health
+			MakePixelSquareArr(integerToColor(self:getHealthCurrent("player")), 15) --15 Represents current amount of health
+			MakePixelSquareArr(integerToColor(self:getManaMax("player")), 16) --16 Represents maximum amount of mana
+			MakePixelSquareArr(integerToColor(self:getManaCurrent("player")), 17) --17 Represents current amount of mana
+			MakePixelSquareArr(integerToColor(self:getPlayerLevel()), 18) --18 Represents character level
+			MakePixelSquareArr(integerToColor(self:isInRange()), 19)
+
+		   --MakePixelSquareArr(integerToColor(self:isCanMeleeAttack()), 20) -- can melee attack
+			--MakePixelSquareArr(integerToColor(self:GetTargetName(0)), 16) -- Characters 1-3 of target's name
             --MakePixelSquareArr(integerToColor(self:GetTargetName(3)), 17) -- Characters 4-6 of target's name
             --MakePixelSquareArr(integerToColor(self:getHealthMax("target")), 18) -- Return the maximum amount of health a target can have
             --MakePixelSquareArr(integerToColor(self:getHealthCurrent("target")), 19) -- Returns the current amount of health the target currently has
@@ -348,7 +372,7 @@ function DataToColor:CreateFrames(n)
             --MakePixelSquareArr(integerToColor(Modulo(self:getMoneyTotal(), 1000000)), 32) -- 13 Represents amount of money held (in copper)
             --MakePixelSquareArr(integerToColor(floor(self:getMoneyTotal() / 1000000)), 33) -- 14 Represents amount of money held (in gold)
             -- Start main action page (page 1)
-            --MakePixelSquareArr(integerToColor(self:spellStatus()), 34) -- Has global cooldown active
+            --MakePixelSquareArr(integerToColor(self:	()), 34) -- Has global cooldown active
             --MakePixelSquareArr(integerToColor(self:spellAvailable()), 35) -- Is the spell available to be cast?
             --MakePixelSquareArr(integerToColor(self:notEnoughMana()), 36) -- Do we have enough mana to cast that spell
             -- Number of slots each bag contains, not including our default backpack
@@ -535,12 +559,11 @@ end
 -- Fireball or a spell with equivalent range must be in slot 2 for this to work
 function DataToColor:isInRange()
     -- Assigns arbitrary value (50) to note the target is not within range
-    local range = 50
-    if IsActionInRange(2) then range = 35 end -- Checks Fireball Range, slot 2
-    if IsActionInRange(3) and self:getPlayerLevel() < 25 then range = 30 end -- Checks Frostbolt Range, slot 3
-    if IsActionInRange(10) then range = 30 end -- Checks Counterspell Range, slot 11. Useful for when after arctic reach is applied
-    if IsActionInRange(4) then range = 20 end -- Checks Fire Blast Range, slot 4
-    return range
+    if IsActionInRange(RANGE_FAR_DISTANCE_SLOT_ID) then return 30 end -- Checks Fireball Range, slot 2
+	if IsActionInRange(RANGE_CLOSE_DISTANCE_SLOT_ID) then return 10 end -- Checks Fireball Range, slot 2
+	if IsActionInRange(RANGE_MELEE_DISTANCE_SLOT_ID) then return 1 end -- Checks Fireball Range, slot 2
+    
+	return 100
 end
 
 -- A function used to check which items we have.
