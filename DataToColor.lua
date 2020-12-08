@@ -78,10 +78,13 @@ local BOTTOM_LEFT_MAX = 72
 DataToColor.frames = nil
 DataToColor.r = 0
 
-local RANGE_FAR_DISTANCE_SLOT_ID = 25
+local TARGET_IN_SIDE_ATTACK = false -- Цель в поле зрения любой атаки
+local OUT_SIDE_ATTACK_MSG = "Цель должна быть перед вами"
+local RANGE_FAR_DISTANCE_SLOT_ID = 25 --Заклинание которое определяет что цель далеко, близко, в плотной. Правая панель
 local RANGE_CLOSE_DISTANCE_SLOT_ID = 26
 local RANGE_MELEE_DISTANCE_SLOT_ID = 27
 
+local MULTI_BAR_RIGHT_START_INDEX = 24
 
 -- Note: Coordinates where player is standing (max: 10, min: -10)
 -- Note: Player direction is in radians (360 degrees = 2π radians)
@@ -195,7 +198,37 @@ end
 function DataToColor:OnInitialize()
     self:CreateFrames(NUMBER_OF_FRAMES)
     self:log("We're in")
+	--PrintActions()
     self:slashCommands();
+end
+
+local ActionBars = {'Action','MultiBarBottomLeft','MultiBarBottomRight','MultiBarRight','MultiBarLeft'}
+function PrintActions()
+	for _, barName in pairs(ActionBars) do
+		for i = 1, 12 do
+			local button = _G[barName .. 'Button' .. i]
+			local slot = ActionButton_GetPagedID(button) or ActionButton_CalculateAction(button) or button:GetAttribute('action') or 0
+			if HasAction(slot) then
+				local actionName, _
+				local actionType, id = GetActionInfo(slot)
+				if actionType == 'macro' then _, _ , id = GetMacroSpell(id) end
+				if actionType == 'item' then
+					actionName = GetItemInfo(id)
+				elseif actionType == 'spell' or (actionType == 'macro' and id) then
+					actionName = GetSpellInfo(id)
+				end
+				if actionName then
+					if barName == "MultiBarRight" and (i + MULTI_BAR_RIGHT_START_INDEX) == RANGE_FAR_DISTANCE_SLOT_ID then
+						SPELL_NAME_DETECT_TARGET_IN_SIDE_RANGE_ATTACK = actionName
+					end
+					if barName == "MultiBarRight" and (i + MULTI_BAR_RIGHT_START_INDEX) == RANGE_MELEE_DISTANCE_SLOT_ID then
+						SPELL_NAME_DETECT_TARGET_IN_SIDE_MELEE_ATTACK = actionName
+					end
+					--print(button:GetName(), actionType, (GetSpellLink(id)), actionName)
+				end
+			end
+		end
+	end
 end
 
 function integerToColor(i)
@@ -233,9 +266,48 @@ function fixedDecimalToColor(f)
     return integerToColor(i)
 end
 
-function DataToColor:isCanMeleeAttack()
-	return 0
+local playerGUID = UnitGUID("player")
+
+
+function StringToByte(str)
+--if type( msg ) == string then
+    -- Sets string to an empty string
+    local ASCII = ''
+    -- Loops through all of string passed to it and converts to upper case ASCII values
+    for i = 1, string.len(str) do
+        -- Assigns the specific value to a character to then assign to the ASCII string/number
+        local c = string.sub(str, i, i)
+        -- Concatenation of old string and new character
+        ASCII = ASCII .. string.byte(c)
+    end
+    return tonumber(ASCII)
 end
+
+local f = CreateFrame("Frame")
+f:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+f:SetScript("OnEvent", function(self, event)
+	-- pass a variable number of arguments
+	self:OnEvent(event, CombatLogGetCurrentEventInfo())
+end)
+
+function f:OnEvent(event, ...)
+	local timestamp, subevent, _, sourceGUID, sourceName, sourceFlags, sourceRaidFlags, destGUID, destName, destFlags, destRaidFlags, a, spellName, c, msg = ...	
+
+	if msg ~= nil then
+
+		local byteMsg = StringToByte(msg)
+		
+		if sourceGUID == playerGUID and subevent == "SPELL_CAST_FAILED" and byteMsg == StringToByte(OUT_SIDE_ATTACK_MSG)  then
+			TARGET_IN_SIDE_ATTACK = false; 
+		else
+			TARGET_IN_SIDE_ATTACK = true
+		end
+	else
+		TARGET_IN_SIDE_ATTACK = true
+	end
+end
+
+
 
 -- Pass in a string to get the upper case ASCII values. Converts any special character with ASCII values below 100
 function DataToColor:StringToASCIIHex(str)
@@ -252,6 +324,16 @@ function DataToColor:StringToASCIIHex(str)
     end
     return tonumber(ASCII)
 end
+
+function DataToColor:IsTargetInSideAttack()
+	if TARGET_IN_SIDE_ATTACK then 
+		return 1
+	else
+		return 0
+	end
+end
+
+
 function DataToColor:reportActionButtons()
 	local lActionSlot = 0;
 	for lActionSlot = 1, 120 do
@@ -322,7 +404,8 @@ function DataToColor:CreateFrames(n)
 			MakePixelSquareArr(integerToColor(self:getManaCurrent("player")), 17) --17 Represents current amount of mana
 			MakePixelSquareArr(integerToColor(self:getPlayerLevel()), 18) --18 Represents character level
 			MakePixelSquareArr(integerToColor(self:isInRange()), 19)
-
+			MakePixelSquareArr(integerToColor(self:IsTargetInSideAttack()), 20)
+			--if TARGET_OUT_SIDE_ATTACK then self:log("here") end
 		   --MakePixelSquareArr(integerToColor(self:isCanMeleeAttack()), 20) -- can melee attack
 			--MakePixelSquareArr(integerToColor(self:GetTargetName(0)), 16) -- Characters 1-3 of target's name
             --MakePixelSquareArr(integerToColor(self:GetTargetName(3)), 17) -- Characters 4-6 of target's name
