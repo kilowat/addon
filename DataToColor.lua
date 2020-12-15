@@ -14,11 +14,18 @@ DATA_CONFIG = {
     REZ = true,
     HIDE_SHAPESHIFT_BAR = true,
     AUTO_REPAIR_ITEMS = true, -- O
-    AUTO_LEARN_TALENTS = true, -- O
-    AUTO_TRAIN_SPELLS = true, -- O
+    AUTO_LEARN_TALENTS = false, -- O
+    AUTO_TRAIN_SPELLS = false, -- O
     AUTO_RESURRECT = true,
     SELL_WHITE_ITEMS = true
 }
+
+local OUT_SIDE_ATTACK_MSG = "Цель должна быть перед вами"
+local RANGE_FAR_DISTANCE_SLOT_ID = 25 --Заклинание которое определяет что цель далеко, близко, в плотной. Правая панель
+local RANGE_CLOSE_DISTANCE_SLOT_ID = 26
+local RANGE_MELEE_DISTANCE_SLOT_ID = 27
+local MULTI_BAR_RIGHT_START_INDEX = 24
+
 
 -- List of talents that will be trained
 local talentList = {
@@ -74,17 +81,12 @@ local MAIN_MIN = 1
 local MAIN_MAX = 12
 local BOTTOM_LEFT_MIN = 61
 local BOTTOM_LEFT_MAX = 72
-
+local BOTTOM_RIGHT_MIN = 49
+local BOTTOM_RIGHT_MAX = 60
 DataToColor.frames = nil
 DataToColor.r = 0
 
 local TARGET_IN_SIDE_ATTACK = false -- Цель в поле зрения любой атаки
-local OUT_SIDE_ATTACK_MSG = "Цель должна быть перед вами"
-local RANGE_FAR_DISTANCE_SLOT_ID = 25 --Заклинание которое определяет что цель далеко, близко, в плотной. Правая панель
-local RANGE_CLOSE_DISTANCE_SLOT_ID = 26
-local RANGE_MELEE_DISTANCE_SLOT_ID = 27
-
-local MULTI_BAR_RIGHT_START_INDEX = 24
 
 -- Note: Coordinates where player is standing (max: 10, min: -10)
 -- Note: Player direction is in radians (360 degrees = 2π radians)
@@ -199,6 +201,7 @@ function DataToColor:OnInitialize()
     self:CreateFrames(NUMBER_OF_FRAMES)
     self:log("We're in")
 	--PrintActions()
+	--self:reportActionButtons();
     self:slashCommands();
 end
 
@@ -405,12 +408,17 @@ function DataToColor:CreateFrames(n)
 			MakePixelSquareArr(integerToColor(self:getPlayerLevel()), 18) --18 Represents character level
 			MakePixelSquareArr(integerToColor(self:isInRange()), 19)
 			MakePixelSquareArr(integerToColor(self:IsTargetInSideAttack()), 20)
-			--if TARGET_OUT_SIDE_ATTACK then self:log("here") end
-		   --MakePixelSquareArr(integerToColor(self:isCanMeleeAttack()), 20) -- can melee attack
+			MakePixelSquareArr(integerToColor(self:getHealthMax("target")), 21) -- Return the maximum amount of health a target can have
+            MakePixelSquareArr(integerToColor(self:getHealthCurrent("target")), 22) -- Returns the current amount of health the target currently has
+			MakePixelSquareArr(integerToColor(self:itemName(4, 1)), 23)
+			-- Start main action page (page 1)
+
+            MakePixelSquareArr(integerToColor(self:spellStatus()), 24) -- Has global cooldown active left
+			MakePixelSquareArr(integerToColor(self:spellAvailable()), 25) -- Is the spell available to be cast?
+            MakePixelSquareArr(integerToColor(self:notEnoughMana()), 26) -- Do we have enough mana to cast that spell
+			
 			--MakePixelSquareArr(integerToColor(self:GetTargetName(0)), 16) -- Characters 1-3 of target's name
             --MakePixelSquareArr(integerToColor(self:GetTargetName(3)), 17) -- Characters 4-6 of target's name
-            --MakePixelSquareArr(integerToColor(self:getHealthMax("target")), 18) -- Return the maximum amount of health a target can have
-            --MakePixelSquareArr(integerToColor(self:getHealthCurrent("target")), 19) -- Returns the current amount of health the target currently has
             -- Begin Items section --
             -- there are 5 item slots: main backpack and 4 pouches
             -- Indexes one slot from each bag each frame. SlotN (1-16) and bag (0-4) calculated here:
@@ -434,12 +442,12 @@ function DataToColor:CreateFrames(n)
                 itemNum = 1
                 slotNum = slotNum + 1
             end
-            -- Uses data pixel positions 20-29
+            -- Uses data pixel positions 23-32
             for i = 0, 4 do
                 -- Returns item ID and quantity
-                --MakePixelSquareArr(integerToColor(self:itemName(i, itemNum)), 20 + i * 2)
+                --MakePixelSquareArr(integerToColor(self:itemName(i, itemNum)), 23 + i * 2)
                 -- Return item slot number
-                --MakePixelSquareArr(integerToColor(i * 16 + itemNum), 21 + i * 2)
+                --MakePixelSquareArr(integerToColor(i * 16 + itemNum), 24 + i * 2)
             end
             -- Worn inventory start.
             -- Starts at beginning once we have looked at all desired slots.
@@ -447,6 +455,13 @@ function DataToColor:CreateFrames(n)
                 equipNum = 1
             end
             local equipName = self:equipName(equipNum)
+			
+			-- Number of slots each bag contains, not including our default backpack
+            --MakePixelSquareArr(integerToColor(self:bagSlots(1)), 37) -- Bag slot 1
+            --MakePixelSquareArr(integerToColor(self:bagSlots(2)), 38) -- Bag slot 2
+            --MakePixelSquareArr(integerToColor(self:bagSlots(3)), 39) -- Bag slot 3
+            --MakePixelSquareArr(integerToColor(self:bagSlots(4)), 40) -- Bag slot 4
+			
             -- Equipment ID
             --MakePixelSquareArr(integerToColor(equipName), 30)
             -- Equipment slot
@@ -454,15 +469,7 @@ function DataToColor:CreateFrames(n)
             -- Amount of money in coppers
             --MakePixelSquareArr(integerToColor(Modulo(self:getMoneyTotal(), 1000000)), 32) -- 13 Represents amount of money held (in copper)
             --MakePixelSquareArr(integerToColor(floor(self:getMoneyTotal() / 1000000)), 33) -- 14 Represents amount of money held (in gold)
-            -- Start main action page (page 1)
-            --MakePixelSquareArr(integerToColor(self:	()), 34) -- Has global cooldown active
-            --MakePixelSquareArr(integerToColor(self:spellAvailable()), 35) -- Is the spell available to be cast?
-            --MakePixelSquareArr(integerToColor(self:notEnoughMana()), 36) -- Do we have enough mana to cast that spell
-            -- Number of slots each bag contains, not including our default backpack
-            --MakePixelSquareArr(integerToColor(self:bagSlots(1)), 37) -- Bag slot 1
-            --MakePixelSquareArr(integerToColor(self:bagSlots(2)), 38) -- Bag slot 2
-            --MakePixelSquareArr(integerToColor(self:bagSlots(3)), 39) -- Bag slot 3
-            --MakePixelSquareArr(integerToColor(self:bagSlots(4)), 40) -- Bag slot 4
+
             -- Profession levels:
             -- tracks our skinning level
             --MakePixelSquareArr(integerToColor(self:GetProfessionLevel("Skinning")), 41) -- Skinning profession level
@@ -694,39 +701,40 @@ function DataToColor:equipName(slot)
 end
 -- -- Function to tell if a spell is on cooldown and if the specified slot has a spell assigned to it
 -- -- Slot ID information can be found on WoW Wiki. Slots we are using: 1-12 (main action bar), Bottom Right Action Bar maybe(49-60), and  Bottom Left (61-72)
-
+--1 ,  2
 function DataToColor:spellStatus()
-    local statusCount = 0
-    for i = MAIN_MIN, MAIN_MAX do
-        -- Make spellAvailable and spellStatus one function in future
-        local status, b, available = GetActionCooldown(i)
-        if status == 0 and available == 1 then
-            statusCount = statusCount + (2 ^ (i - 1))
-        end
-    end
-    for i = BOTTOM_LEFT_MIN, BOTTOM_LEFT_MAX do
-        local status, b, available = GetActionCooldown(i)
-        if status == 0 and available == 1 then
-            statusCount = statusCount + (2 ^ (i - 49))
-        end
-    end
-    return statusCount
+	local statusCount = 0
+	for i = BOTTOM_LEFT_MIN, BOTTOM_LEFT_MAX do
+		local status, b, available = GetActionCooldown(i)
+		if status == 0 and available == 1 then
+			statusCount = statusCount + (2 ^ (i - 61))
+		end
+	end
+
+	for i = BOTTOM_RIGHT_MIN, BOTTOM_RIGHT_MAX do
+		local status, b, available = GetActionCooldown(i)
+		if status == 0 and available == 1 then
+			statusCount = statusCount + (2 ^ (i - 37))
+		end
+	end
+	return statusCount
 end
 -- Finds if spell is equipped
 function DataToColor:spellAvailable()
     local availability = 0
-    for i = MAIN_MIN, MAIN_MAX do
-        local _, _, available = GetActionCooldown(i)
-        if available == 1 then
-            availability = availability + (2 ^ (i - 1))
-        end
-    end
     for i = BOTTOM_LEFT_MIN, BOTTOM_LEFT_MAX do
         local _, _, available = GetActionCooldown(i)
         if available == 1 then
-            availability = availability + (2 ^ (i - 49))
+            availability = availability + (2 ^ (i - 61))
         end
     end
+    for i = BOTTOM_RIGHT_MIN, BOTTOM_RIGHT_MAX do
+        local _, _, available = GetActionCooldown(i)
+        if available == 1 then
+            availability = availability + (2 ^ (i - 37))
+        end
+    end
+	self:log(availability)
     return availability
 end
 
@@ -734,17 +742,17 @@ end
 function DataToColor:notEnoughMana()
     local notEnoughMana = 0
     -- Loops through main action bar slots 1-12
-    for i = MAIN_MIN, MAIN_MAX do
-        local _, notEnough = IsUsableAction(i)
-        if notEnough == 1 then
-            notEnoughMana = notEnoughMana + (2 ^ (i - 1))
-        end
-    end
-    -- Loops through bottom left action bar slots 61-72
     for i = BOTTOM_LEFT_MIN, BOTTOM_LEFT_MAX do
         local _, notEnough = IsUsableAction(i)
         if notEnough == 1 then
-            notEnoughMana = notEnoughMana + (2 ^ (i - 49))
+            notEnoughMana = notEnoughMana + (2 ^ (i - 61))
+        end
+    end
+    -- Loops through bottom left action bar slots 61-72
+    for i = BOTTOM_RIGHT_MIN, BOTTOM_RIGHT_MAX do
+        local _, notEnough = IsUsableAction(i)
+        if notEnough == 1 then
+            notEnoughMana = notEnoughMana + (2 ^ (i - 37))
         end
     end
     return notEnoughMana
@@ -1189,7 +1197,7 @@ function DataToColor:CheckTrainer()
     iterator = iterator + 1
     if Modulo(iterator, 30) == 1 then
         -- First checks that the trainer gossip window is open
-        -- DEFAULT_CHAT_FRAME:AddMessage(GetTrainerServdiceInfo(1))
+         -- DEFAULT_CHAT_FRAME:AddMessage(GetTrainerServiceInfo(1))
         if GetTrainerServiceInfo(1) ~= nil and DATA_CONFIG .AUTO_TRAIN_SPELLS then
             -- LPCONFIG.AUTO_TRAIN_SPELLS = false
             local allAvailableOptions = GetNumTrainerServices()
@@ -1205,7 +1213,7 @@ function DataToColor:CheckTrainer()
                 if spell ~= nil and ValidSpell(spell) then
                     if GetTrainerServiceLevelReq(i) <= level then
                         if GetTrainerServiceCost(i) <= money then
-                            -- DEFAULT_CHAT_FRAME:AddMessage(" buying spell" .. tostring(i) )
+                            --DEFAULT_CHAT_FRAME:AddMessage(" buying spell" .. tostring(i) )
                             BuyTrainerService(i)
                             -- Closes skinning trainer, fishing trainer menu, etc.
                             -- Closes after one profession purchase. Impossible to buy profession skills concurrently.
