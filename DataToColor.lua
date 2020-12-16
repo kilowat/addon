@@ -734,7 +734,6 @@ function DataToColor:spellAvailable()
             availability = availability + (2 ^ (i - 37))
         end
     end
-	self:log(availability)
     return availability
 end
 
