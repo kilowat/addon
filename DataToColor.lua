@@ -26,6 +26,9 @@ local RANGE_CLOSE_DISTANCE_SLOT_ID = 26
 local RANGE_MELEE_DISTANCE_SLOT_ID = 27
 local MULTI_BAR_RIGHT_START_INDEX = 24
 
+local FOOD_SLOT_ID = 60 -- Check the slot for how many i have a food
+local DRINK_SLOT_ID = 59 -- Check the slot for how many i have a drink
+local MANA_GEM_SLOT_ID = 58 -- Check the slot for how many i have a mana gem 
 
 -- List of talents that will be trained
 local talentList = {
@@ -412,11 +415,10 @@ function DataToColor:CreateFrames(n)
             MakePixelSquareArr(integerToColor(self:getHealthCurrent("target")), 22) -- Returns the current amount of health the target currently has
 			MakePixelSquareArr(integerToColor(self:itemName(4, 1)), 23)
 			-- Start main action page (page 1)
-
+	
             MakePixelSquareArr(integerToColor(self:spellStatus()), 24) -- Has global cooldown active left
 			MakePixelSquareArr(integerToColor(self:spellAvailable()), 25) -- Is the spell available to be cast?
             MakePixelSquareArr(integerToColor(self:notEnoughMana()), 26) -- Do we have enough mana to cast that spell
-			
 			--MakePixelSquareArr(integerToColor(self:GetTargetName(0)), 16) -- Characters 1-3 of target's name
             --MakePixelSquareArr(integerToColor(self:GetTargetName(3)), 17) -- Characters 4-6 of target's name
             -- Begin Items section --
@@ -1000,7 +1002,7 @@ end
 
 -- Returns true is player has less than 10 food in action slot 66
 function DataToColor:needFood()
-    if GetActionCount(6) < 10 then
+    if GetActionCount(FOOD_SLOT_ID) < 10 then
         return 1
     else return 0
     end
@@ -1008,7 +1010,7 @@ end
 
 -- Returns true if the player has less than 10 water in action slot 7
 function DataToColor:needWater()
-    if GetActionCount(7) < 10 then
+    if GetActionCount(DRINK_SLOT_ID) < 10 then
         return 1
     else return 0
     end
@@ -1016,7 +1018,7 @@ end
 
 -- Returns if we have a mana gem (Agate, Ruby, etc.) in slot 67
 function DataToColor:needManaGem()
-    if GetActionCount(67) < 1 then
+    if GetActionCount(MANA_GEM_SLOT_ID) < 1 then
         return 1
     else return 0
     end
@@ -1243,6 +1245,7 @@ end
 --the x and y is 0 if not dead
 --runs the RetrieveCorpse() function to ressurrect
 function DataToColor:ResurrectPlayer()
+	iterator = iterator + 1
     if Modulo(iterator, 150) == 1 then
         if UnitIsDeadOrGhost("player") then
             -- Accept Release Spirit immediately after dying
