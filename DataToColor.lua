@@ -20,10 +20,10 @@ DATA_CONFIG = {
     SELL_WHITE_ITEMS = true
 }
 
-local OUT_SIDE_ATTACK_MSG = "Цель должна быть перед вами"
 local RANGE_FAR_DISTANCE_SLOT_ID = 25 --Заклинание которое определяет что цель далеко, близко, в плотной. Правая панель
 local RANGE_CLOSE_DISTANCE_SLOT_ID = 26
 local RANGE_MELEE_DISTANCE_SLOT_ID = 27
+
 local MULTI_BAR_RIGHT_START_INDEX = 24
 
 local FOOD_SLOT_ID = 60 -- Check the slot for how many i have a food
@@ -290,20 +290,16 @@ function StringToByte(str)
 end
 
 local f = CreateFrame("Frame")
-f:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
-f:SetScript("OnEvent", function(self, event)
+f:RegisterEvent("UI_ERROR_MESSAGE")
+f:SetScript("OnEvent", function(self, event, msg)
 	-- pass a variable number of arguments
-	self:OnEvent(event, CombatLogGetCurrentEventInfo())
+	self:OnEvent(event, msg)
 end)
 
-function f:OnEvent(event, ...)
-	local timestamp, subevent, _, sourceGUID, sourceName, sourceFlags, sourceRaidFlags, destGUID, destName, destFlags, destRaidFlags, a, spellName, c, msg = ...	
-
+function f:OnEvent(event, msg)
+	--print(msg);
 	if msg ~= nil then
-
-		local byteMsg = StringToByte(msg)
-		
-		if sourceGUID == playerGUID and subevent == "SPELL_CAST_FAILED" and byteMsg == StringToByte(OUT_SIDE_ATTACK_MSG)  then
+		if msg == 254  then
 			TARGET_IN_SIDE_ATTACK = false; 
 		else
 			TARGET_IN_SIDE_ATTACK = true
@@ -398,7 +394,7 @@ function DataToColor:CreateFrames(n)
 			MakePixelSquareArr(self:ThreeCharsToColor(4, GetZoneText()), 8)
 			MakePixelSquareArr(self:ThreeCharsToColor(5, GetZoneText()), 9)
 			MakePixelSquareArr(self:ThreeCharsToColor(6, GetZoneText()), 10)
-
+			
 			MakePixelSquareArr(fixedDecimalToColor(self:CorpsePosition("x") * 10), 11) -- Returns the x coordinates of corpse
 			MakePixelSquareArr(fixedDecimalToColor(self:CorpsePosition("y") * 10), 12) -- Return y coordinates of corpse
             -- Boolean variables --
