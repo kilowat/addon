@@ -411,7 +411,7 @@ function DataToColor:CreateFrames(n)
             MakePixelSquareArr(integerToColor(self:getHealthCurrent("target")), 22) -- Returns the current amount of health the target currently has
 			MakePixelSquareArr(integerToColor(self:itemName(4, 1)), 23)
 			-- Start main action page (page 1)
-	
+
             MakePixelSquareArr(integerToColor(self:spellStatus()), 24) -- Has global cooldown active left
 			MakePixelSquareArr(integerToColor(self:spellAvailable()), 25) -- Is the spell available to be cast?
             MakePixelSquareArr(integerToColor(self:notEnoughMana()), 26) -- Do we have enough mana to cast that spell
@@ -800,6 +800,9 @@ function DataToColor:ThreeCharsToColor(index, str)
 	
 	local from = tmpIndex
 	local to = (tmpIndex + 9)
+	
+	if str == nil then return {0,0,0} end
+	
 	local iterStr = string.sub(str, from, to)
 	
 	local rStr = string.sub(iterStr, 0, 3)
@@ -980,7 +983,8 @@ end
 function DataToColor:GetInventoryBroken()
     for i = 1, 16 do
         local isBroken = GetInventoryItemBroken("player", i)
-        if isBroken == 1 then
+
+        if isBroken then
             return 1
         end
     end
