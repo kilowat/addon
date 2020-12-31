@@ -64,7 +64,7 @@ local NUMBER_OF_FRAMES = 50
 -- Set number of pixel rows
 local FRAME_ROWS = 1
 -- Size of data squares in px. Varies based on rounding errors as well as dimension size. Use as a guideline, but not 100% accurate.
-local CELL_SIZE = 10
+local CELL_SIZE = 2
 -- Spacing in px between data squares.
 local CELL_SPACING = 2
 -- Item slot trackers initialization
@@ -409,9 +409,9 @@ function DataToColor:CreateFrames(n)
 			MakePixelSquareArr(integerToColor(self:IsTargetInSideAttack()), 20)
 			MakePixelSquareArr(integerToColor(self:getHealthMax("target")), 21) -- Return the maximum amount of health a target can have
             MakePixelSquareArr(integerToColor(self:getHealthCurrent("target")), 22) -- Returns the current amount of health the target currently has
-			MakePixelSquareArr(integerToColor(self:itemName(4, 1)), 23)
+			MakePixelSquareArr(integerToColor(self:FreeSlotsInBag()), 23)
 			-- Start main action page (page 1)
-
+				
             MakePixelSquareArr(integerToColor(self:spellStatus()), 24) -- Has global cooldown active left
 			MakePixelSquareArr(integerToColor(self:spellAvailable()), 25) -- Is the spell available to be cast?
             MakePixelSquareArr(integerToColor(self:notEnoughMana()), 26) -- Do we have enough mana to cast that spell
@@ -652,6 +652,21 @@ function DataToColor:isInRange()
 	if IsActionInRange(RANGE_MELEE_DISTANCE_SLOT_ID) then return 1 end -- Checks Fireball Range, slot 2
     
 	return 100
+end
+
+-- Count of free cells in bags
+function DataToColor:FreeSlotsInBag()
+	local totalSlots = 0
+	local fillSlotsCount = 0
+	for i = 0, 5 do
+		totalSlots = totalSlots + self:bagSlots(i)
+		for j = 1, self:bagSlots(i) do
+			if self:itemName(i, j) > 0 then
+				fillSlotsCount = fillSlotsCount + 1
+			end
+		end
+	end
+	return totalSlots - fillSlotsCount
 end
 
 -- A function used to check which items we have.
