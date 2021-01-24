@@ -24,6 +24,8 @@ local RANGE_FAR_DISTANCE_SLOT_ID = 25 --Заклинание которое оп
 local RANGE_CLOSE_DISTANCE_SLOT_ID = 26
 local RANGE_MELEE_DISTANCE_SLOT_ID = 27
 
+local IN_SIDE_ATTACK_MESSAGE_TEXT = "Цель должна быть перед вами"
+
 local MULTI_BAR_RIGHT_START_INDEX = 24
 
 local FOOD_SLOT_ID = 60 -- Check the slot for how many i have a food
@@ -291,15 +293,14 @@ end
 
 local f = CreateFrame("Frame")
 f:RegisterEvent("UI_ERROR_MESSAGE")
-f:SetScript("OnEvent", function(self, event, msg)
+f:SetScript("OnEvent", function(self, event, msg, text)
 	-- pass a variable number of arguments
-	self:OnEvent(event, msg)
+	self:OnEvent(event, msg, text)
 end)
 
-function f:OnEvent(event, msg)
-	--print(msg);
+function f:OnEvent(event, msg, text)
 	if msg ~= nil then
-		if msg == 254  then
+		if StringToByte(text) == StringToByte(IN_SIDE_ATTACK_MESSAGE_TEXT) or  msg == 254 then
 			TARGET_IN_SIDE_ATTACK = false; 
 		else
 			TARGET_IN_SIDE_ATTACK = true
@@ -1015,17 +1016,17 @@ function DataToColor:IsPlayerFlying()
     return 0
 end
 
--- Returns true is player has less than 10 food in action slot 66
+-- Returns true is player has less than 4 food in action slot 66
 function DataToColor:needFood()
-    if GetActionCount(FOOD_SLOT_ID) < 10 then
+    if GetActionCount(FOOD_SLOT_ID) < 4 then
         return 1
     else return 0
     end
 end
 
--- Returns true if the player has less than 10 water in action slot 7
+-- Returns true if the player has less than 4 water in action slot 7
 function DataToColor:needWater()
-    if GetActionCount(DRINK_SLOT_ID) < 10 then
+    if GetActionCount(DRINK_SLOT_ID) < 4 then
         return 1
     else return 0
     end
