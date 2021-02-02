@@ -416,6 +416,8 @@ function DataToColor:CreateFrames(n)
             MakePixelSquareArr(integerToColor(self:spellStatus()), 24) -- Has global cooldown active left
 			MakePixelSquareArr(integerToColor(self:spellAvailable()), 25) -- Is the spell available to be cast?
             MakePixelSquareArr(integerToColor(self:notEnoughMana()), 26) -- Do we have enough mana to cast that spell
+			MakePixelSquareArr(integerToColor(self:isPlayerTarget()), 27) -- Target is player or mob
+			
 			--MakePixelSquareArr(integerToColor(self:GetTargetName(0)), 16) -- Characters 1-3 of target's name
             --MakePixelSquareArr(integerToColor(self:GetTargetName(3)), 17) -- Characters 4-6 of target's name
             -- Begin Items section --
@@ -643,6 +645,15 @@ end
 function DataToColor:getMoneyTotal()
     return GetMoney()
 end
+
+function DataToColor:isPlayerTarget()
+	if (UnitIsPlayer('target')) then
+	   return 1
+	else
+	   return 0
+	end
+end
+
 
 -- Finds if target is attackable with the fireball which is the longest distance spell.
 -- Fireball or a spell with equivalent range must be in slot 2 for this to work
