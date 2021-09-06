@@ -336,6 +336,17 @@ function DataToColor:IsTargetInSideAttack()
 	end
 end
 
+function DataToColor:IsTargetDiffFraction()
+	t_englishFaction, t_localizedFaction = UnitFactionGroup('target')
+	p_englishFaction, p_localizedFaction = UnitFactionGroup('player')
+	
+	if t_englishFaction ~= p_englishFaction and t_englishFaction ~=nil then 
+		return 1
+	else 
+		return 0
+	end
+end
+
 
 function DataToColor:reportActionButtons()
 	local lActionSlot = 0;
@@ -417,7 +428,11 @@ function DataToColor:CreateFrames(n)
 			MakePixelSquareArr(integerToColor(self:spellAvailable()), 25) -- Is the spell available to be cast?
             MakePixelSquareArr(integerToColor(self:notEnoughMana()), 26) -- Do we have enough mana to cast that spell
 			MakePixelSquareArr(integerToColor(self:isPlayerTarget()), 27) -- Target is player or mob
-			
+			MakePixelSquareArr(integerToColor(self:isMounted()), 28) 
+			MakePixelSquareArr(integerToColor(self:isSwimming()), 29)
+			MakePixelSquareArr(integerToColor(self:isIndoors()), 30)
+			MakePixelSquareArr(integerToColor(self:IsTargetDiffFraction()), 31)
+	
 			--MakePixelSquareArr(integerToColor(self:GetTargetName(0)), 16) -- Characters 1-3 of target's name
             --MakePixelSquareArr(integerToColor(self:GetTargetName(3)), 17) -- Characters 4-6 of target's name
             -- Begin Items section --
@@ -504,11 +519,17 @@ function DataToColor:CreateFrames(n)
     end
     
     local function genFrame(name, x, y)
-        local f = CreateFrame("Frame", name, UIParent)
+        local f = CreateFrame("Frame", name, UIParent, BackdropTemplateMixin and "BackdropTemplate")
         f:SetPoint("TOPLEFT", x * (CELL_SIZE + CELL_SPACING), -y * (CELL_SIZE + CELL_SPACING))
         f:SetHeight(CELL_SIZE)
         f:SetWidth(CELL_SIZE) -- Change this to make white box wider
         setFramePixelBackdrop(f)
+		
+		f:SetBackdrop({
+            bgFile = "Interface\\AddOns\\DataToColor\\white.tga",
+            insets = {top = 0, left = 0, bottom = 0, right = 0},
+        })
+		
         f:SetFrameStrata("DIALOG")
         return f
     end
@@ -562,9 +583,11 @@ end
 -- Use Astrolabe function to get current player position
 function DataToColor:GetCurrentPlayerPosition()
     local map = C_Map.GetBestMapForUnit("player")
+
     local position = C_Map.GetPlayerMapPosition(map, "player")
     -- Resets map to correct zone ... removed in 8.0.1, needs to be tested to see if zone auto update
-    -- SetMapToCurrentZone()
+    --SetMapToCurrentZone()
+
     return position:GetXY()
 end
 
@@ -646,6 +669,7 @@ function DataToColor:getMoneyTotal()
     return GetMoney()
 end
 
+-- is current target a player or npc
 function DataToColor:isPlayerTarget()
 	if (UnitIsPlayer('target')) then
 	   return 1
@@ -654,6 +678,29 @@ function DataToColor:isPlayerTarget()
 	end
 end
 
+function DataToColor:isMounted()
+	if (IsMounted()) then
+	   return 1
+	else
+	   return 0
+	end
+end
+
+function DataToColor:isSwimming()
+	if (IsSwimming()) then
+	   return 1
+	else
+	   return 0
+	end
+end
+
+function DataToColor:isIndoors()
+	if (IsIndoors()) then
+	   return 1
+	else
+	   return 0
+	end
+end
 
 -- Finds if target is attackable with the fireball which is the longest distance spell.
 -- Fireball or a spell with equivalent range must be in slot 2 for this to work
