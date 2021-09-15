@@ -17,7 +17,8 @@ DATA_CONFIG = {
     AUTO_LEARN_TALENTS = false, -- O
     AUTO_TRAIN_SPELLS = false, -- O
     AUTO_RESURRECT = true,
-    SELL_WHITE_ITEMS = true
+    SELL_WHITE_ITEMS = true,
+	SELL_ALL_ITEMS = false
 }
 
 local RANGE_FAR_DISTANCE_SLOT_ID = 25 --Заклинание которое определяет что цель далеко, близко, в плотной. Правая панель
@@ -1178,6 +1179,11 @@ function DataToColor:HandleEvents()
     if DATA_CONFIG.AUTO_RESURRECT then
         self:ResurrectPlayer()
     end
+	    -- Sell all items
+    if DATA_CONFIG.SELL_ALL_ITEMS then
+        self:SellAll()
+    end
+	
 end
 
 -- Declines/Accepts Party Invites.
@@ -1200,6 +1206,18 @@ function DataToColor:RepairItems()
             RepairAllItems()
         end
     end
+end
+
+
+-- Sell items
+function DataToColor:SellAll()
+	for bag = 1, 4 do for slot = 1, 
+		GetContainerNumSlots(bag) 
+		do 
+			local name = GetContainerItemLink(bag,slot) 
+			DEFAULT_CHAT_FRAME:AddMessage("Selling "..name) UseContainerItem(bag,slot) 
+		end 
+	end
 end
 
 -- Automatically learns predefined talents
