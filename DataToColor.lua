@@ -18,15 +18,15 @@ DATA_CONFIG = {
     AUTO_TRAIN_SPELLS = false, -- O
     AUTO_RESURRECT = true,
     SELL_WHITE_ITEMS = true,
-	SELL_ALL_ITEMS = false
+	SELL_ALL_ITEMS = true,
 }
 
 local RANGE_FAR_DISTANCE_SLOT_ID = 25 --Заклинание которое определяет что цель далеко, близко, в плотной. Правая панель
 local RANGE_CLOSE_DISTANCE_SLOT_ID = 26
 local RANGE_MELEE_DISTANCE_SLOT_ID = 27
 
-local IN_SIDE_ATTACK_MESSAGE_TEXT = "Цель должна быть перед вами"
-
+local IN_SIDE_ATTACK_MESSAGE_TEXT = "Цель должна быть перед вами."
+local TARGET_TO_FAR_MESSAGE_TEXT = "Слишком далеко."
 local MULTI_BAR_RIGHT_START_INDEX = 24
 
 local FOOD_SLOT_ID = 60 -- Check the slot for how many i have a food
@@ -93,7 +93,7 @@ DataToColor.frames = nil
 DataToColor.r = 0
 
 local TARGET_IN_SIDE_ATTACK = false -- Цель в поле зрения любой атаки
-
+local TARGET_SO_FAR = false -- Цель вне досегаймости
 -- Note: Coordinates where player is standing (max: 10, min: -10)
 -- Note: Player direction is in radians (360 degrees = 2π radians)
 -- Note: Player health/mana is taken out of 100% (0 - 1)
@@ -292,23 +292,55 @@ function StringToByte(str)
     return tonumber(ASCII)
 end
 
+
+-- Sell items
+function SellAllInBag(bag)
+	for slot = 1, GetContainerNumSlots(bag) do
+		C_Timer.After(slot/2, function()
+			UseContainerItem(bag, slot)
+		end)
+	end
+end
+
+function SellProcess()
+	SellAllInBag(1)
+	SellAllInBag(2)
+	SellAllInBag(3)
+	SellAllInBag(4)
+end
+
 local f = CreateFrame("Frame")
 f:RegisterEvent("UI_ERROR_MESSAGE")
+f:RegisterEvent("MERCHANT_SHOW")
 f:SetScript("OnEvent", function(self, event, msg, text)
 	-- pass a variable number of arguments
 	self:OnEvent(event, msg, text)
 end)
 
 function f:OnEvent(event, msg, text)
+	if (event == "MERCHANT_SHOW") then
+		SellProcess()
+	end
+	
 	if msg ~= nil then
-		if StringToByte(text) == StringToByte(IN_SIDE_ATTACK_MESSAGE_TEXT) or  msg == 254 then
-			TARGET_IN_SIDE_ATTACK = false; 
+		if (StringToByte(text) == StringToByte(TARGET_TO_FAR_MESSAGE_TEXT)) then
+			TARGET_SO_FAR = true
+		else
+			TARGET_SO_FAR = false
+		end
+		
+		if StringToByte(text) == StringToByte(IN_SIDE_ATTACK_MESSAGE_TEXT) or  msg == 254  then
+			TARGET_IN_SIDE_ATTACK = false
 		else
 			TARGET_IN_SIDE_ATTACK = true
 		end
 	else
 		TARGET_IN_SIDE_ATTACK = true
 	end
+end
+
+function round(num)
+  return num + (2^52 + 2^51) - (2^52 + 2^51)
 end
 
 
@@ -1179,12 +1211,9 @@ function DataToColor:HandleEvents()
     if DATA_CONFIG.AUTO_RESURRECT then
         self:ResurrectPlayer()
     end
-	    -- Sell all items
-    if DATA_CONFIG.SELL_ALL_ITEMS then
-        self:SellAll()
-    end
 	
 end
+
 
 -- Declines/Accepts Party Invites.
 function DataToColor:HandlePartyInvite()
@@ -1208,17 +1237,6 @@ function DataToColor:RepairItems()
     end
 end
 
-
--- Sell items
-function DataToColor:SellAll()
-	for bag = 1, 4 do for slot = 1, 
-		GetContainerNumSlots(bag) 
-		do 
-			local name = GetContainerItemLink(bag,slot) 
-			DEFAULT_CHAT_FRAME:AddMessage("Selling "..name) UseContainerItem(bag,slot) 
-		end 
-	end
-end
 
 -- Automatically learns predefined talents
 function DataToColor:LearnTalents()
