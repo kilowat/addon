@@ -19,6 +19,7 @@ DATA_CONFIG = {
     AUTO_RESURRECT = true,
     SELL_WHITE_ITEMS = true,
 	SELL_ALL_ITEMS = true,
+	LOGOUT_IF_CHAT_MSG_WHISPER = true, -- Выходить из игры если кто то написал в пм
 }
 
 local RANGE_FAR_DISTANCE_SLOT_ID = 25 --Заклинание которое определяет что цель далеко, близко, в плотной. Правая панель
@@ -110,6 +111,8 @@ local translit = {
   ['И']="200", ['Й']="201", ['К'] ="202", ['Л'] ="203", ['М'] ="204", ['Н']="205", ['О'] ="206", ['П'] ="207",
   ['Р'] ="208", ['С'] ="209", ['Т'] ="210", ['У'] ="211", ['Ф'] ="212", ['Х'] ="213", ['Ц'] ="214", ['Ч'] ="215",
   ['Ш'] ="216", ['Щ'] ="217", ['Ъ'] ="218", ['Ы'] ="219", ['Ь']="220", ['Э']="221", ['Ю']="222",['Я']="223", [' '] = "160"}
+
+local havePmMessage = 0 -- Тригернется в 1 когда придет сообщение в пм затем через 1 сек в 0
 
 function DataToColor:RusUpper(Ch)
   if string.byte(Ch) < 224 then return string.upper(Ch) end
@@ -297,7 +300,13 @@ end
 function SellAllInBag(bag)
 	for slot = 1, GetContainerNumSlots(bag) do
 		C_Timer.After(slot/2, function()
-			UseContainerItem(bag, slot)
+			local link = GetContainerItemLink(bag, slot)
+			if (link) then
+				local quantity = select(3, GetItemInfo(link))
+				if (quantity < 4) then
+					UseContainerItem(bag, slot)
+				end
+			end
 		end)
 	end
 end
@@ -309,9 +318,18 @@ function SellProcess()
 	SellAllInBag(4)
 end
 
+function TriggerHaveMessage()
+	havePmMessage = 1
+	C_Timer.After(1, function()
+		havePmMessage = 0
+	end)
+end
+
 local f = CreateFrame("Frame")
 f:RegisterEvent("UI_ERROR_MESSAGE")
 f:RegisterEvent("MERCHANT_SHOW")
+f:RegisterEvent("CHAT_MSG_WHISPER")
+
 f:SetScript("OnEvent", function(self, event, msg, text)
 	-- pass a variable number of arguments
 	self:OnEvent(event, msg, text)
@@ -320,6 +338,10 @@ end)
 function f:OnEvent(event, msg, text)
 	if (event == "MERCHANT_SHOW") then
 		SellProcess()
+	end
+	
+	if (event == "CHAT_MSG_WHISPER") and DATA_CONFIG.LOGOUT_IF_CHAT_MSG_WHISPER then
+		TriggerHaveMessage()
 	end
 	
 	if msg ~= nil then
@@ -465,7 +487,9 @@ function DataToColor:CreateFrames(n)
 			MakePixelSquareArr(integerToColor(self:isSwimming()), 29)
 			MakePixelSquareArr(integerToColor(self:isIndoors()), 30)
 			MakePixelSquareArr(integerToColor(self:IsTargetDiffFraction()), 31)
-	
+			MakePixelSquareArr(integerToColor(self:isUnskinnable()), 32)
+			MakePixelSquareArr(integerToColor(havePmMessage), 33)
+		
 			--MakePixelSquareArr(integerToColor(self:GetTargetName(0)), 16) -- Characters 1-3 of target's name
             --MakePixelSquareArr(integerToColor(self:GetTargetName(3)), 17) -- Characters 4-6 of target's name
             -- Begin Items section --
@@ -627,7 +651,8 @@ end
 -- Base 2 converter for up to 24 boolean values to a single pixel square.
 function DataToColor:Base2Converter()
     -- 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384
-    return self:MakeIndexBase2(
+	
+	return self:MakeIndexBase2(
 	self:targetCombatStatus(), 0) + 
 	self:MakeIndexBase2(self:GetEnemyStatus(), 1) + 
 	self:MakeIndexBase2(self:deadOrAlive(), 2) +
@@ -640,6 +665,7 @@ function DataToColor:Base2Converter()
     self:MakeIndexBase2(self:IsTargetOfTargetPlayer(), 9) + 
 	self:MakeIndexBase2(self:needManaGem(), 10) + 
 	self:MakeIndexBase2(self:ProcessExitStatus(), 11)
+
 end
 
 -- Returns bitmask values.
@@ -1097,10 +1123,10 @@ function DataToColor:GetInventoryBroken()
     end
     return 0
 end
--- Checks if we are on a taxi
+-- Checks if we are on a fly
 function DataToColor:IsPlayerFlying()
-    local taxiStatus = UnitOnTaxi("player")
-    if taxiStatus then
+    local flystatus = IsFlying()
+    if flystatus then
         return 1
     end
     -- Returns 0 if not on a wind rider beast
